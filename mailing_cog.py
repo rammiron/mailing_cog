@@ -12,15 +12,18 @@ class MailingCog(commands.Cog):
     async def notify_role(self, ctx: discord.ApplicationContext,
                           message_text: Option(str, description="Текст сообщения рассылки."),
                           role: Option(discord.Role, description="Роль, участников с которой добавить к рассылке.")):
-        members = ctx.guild.members
+        members = role.members
         notifyted_members = ""
+        fail_notify = ""
         for member in members:
-            if role not in member.roles:
-                continue
-            await member.create_dm()
-            notifyted_members += member.display_name + "\n"
-            await member.send(message_text)
-        await ctx.respond(f"Готово, сообщение отосланы:\n {notifyted_members}", ephemeral=True)
+            try:
+                notifyted_members += member.display_name + "\n"
+                await member.send(message_text)
+            except Exception as ex:
+                fail_notify += member.display_name + f"Причина: {ex} " + "\n"
+
+        await ctx.respond(f"Готово, сообщения отосланы:\n {notifyted_members}" + (
+                          f"Сообщения не отосланы: {fail_notify}" if len(fail_notify) > 0 else ""), ephemeral=True)
 
     @commands.slash_command(name="notify_with_subscribe", description="Уведомить подписавшихся "
                                                                       "участников через определенное время.")
@@ -29,7 +32,7 @@ class MailingCog(commands.Cog):
                                     message_to_member: Option(str, description="Сообщение рассылки."),
                                     channel: Option(discord.TextChannel,
                                                     description="Канал для сообщения подписки на рассылку."),
-                                    time_to_notify: Option(float, description="Время до рассылки.")):
+                                    time_to_notify: Option(float, description="Время до рассылки в секундах.")):
 
         message = await channel.send(message_to_subscribe)
         await ctx.respond("Успешно. Рассылка объявлена.", ephemeral=True)
@@ -48,8 +51,8 @@ class MailingCog(commands.Cog):
             for subscriber in subscribers:
                 try:
                     await subscriber.create_dm()
-                    channel = subscriber.dm_channel
-                    await channel.send(
+                    channel_dm = subscriber.dm_channel
+                    await channel_dm.send(
                         f"**Вы были подписаны на уведомление. Текст уведомления:** \n{message_to_member}\n")
                 except:
                     pass
