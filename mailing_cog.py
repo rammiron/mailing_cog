@@ -55,3 +55,12 @@ class MailingCog(commands.Cog):
                     pass
             await message.clear_reactions()
 
+    @commands.slash_command(name="remindme", description="Уведомить себя через указанное время.")
+    async def remindme(self, ctx: discord.ApplicationContext, message: Option(str, description="Сообщение."),
+                       time: Option(float, "Время до отправки в секундах.")):
+        await ctx.respond(f"Готово. Сообщение будет отослано через: {time}сек.")
+        await asyncio.sleep(time)
+        try:
+            await ctx.author.send(message)
+        except Exception as ex:
+            await ctx.channel.send(f"{ctx.author.mention}, уведомление не было отослано по причине: {ex}.")
