@@ -12,18 +12,25 @@ class MailingCog(commands.Cog):
     async def notify_role(self, ctx: discord.ApplicationContext,
                           message_text: Option(str, description="Текст сообщения рассылки."),
                           role: Option(discord.Role, description="Роль, участников с которой добавить к рассылке.")):
-        members = role.members
+        grole = ctx.guild.get_role(role.id)
+        members = grole.members
         notifyted_members = ""
         fail_notify = ""
+        await ctx.defer()
         for member in members:
             try:
-                notifyted_members += member.display_name + "\n"
-                await member.send(message_text)
-            except Exception as ex:
-                fail_notify += member.display_name + f"Причина: {ex} " + "\n"
 
-        await ctx.respond(f"Готово, сообщения отосланы:\n {notifyted_members}" + (
-                          f"Сообщения не отосланы: {fail_notify}" if len(fail_notify) > 0 else ""), ephemeral=True)
+                await member.send(message_text)
+                notifyted_members += member.display_name + "\n"
+            except Exception as ex:
+                fail_notify += member.display_name + f"  Причина: {ex} " + "\n"
+                continue
+        fail = ""
+        if len(fail_notify) > 0:
+            fail = f"Сообщения не отосланы: {fail_notify}"
+        else:
+            fail = ""
+        await ctx.respond(f"Успешно! Сообщения отосланы: {notifyted_members} \n {fail}", ephemeral=True)
 
     @commands.slash_command(name="notify_with_subscribe", description="Уведомить подписавшихся "
                                                                       "участников через определенное время.")
